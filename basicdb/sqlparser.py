@@ -83,6 +83,12 @@ class BoolOperand(object):
     def comparable(self):
         return True
 
+    def get_single_value_or_raise(self):
+        if len(self.value) > 1:
+            raise Exception("Asked for singular value, but multiple values were available")
+        else:
+            return self.value.copy().pop()
+
 class ValueList(BoolOperand):
     def __init__(self, t):
         self.value = self
@@ -93,7 +99,7 @@ class ValueList(BoolOperand):
 
     def __contains__(self, item):
         for needle in item.value:
-            if not any(needle == v.value.copy().pop() for v in self._value):
+            if not any(needle == v.get_single_value_or_raise() for v in self._value):
                 return False
         return True
 
@@ -105,10 +111,10 @@ class Literal(BoolOperand):
         self.value = set([t[0]])
 
     def riak_js_expr(self):
-        return repr(self.value.copy().pop())
+        return repr(self.get_single_value_or_raise())
 
     def __str__(self):
-        return str(self.value.copy().pop())
+        return str(self.get_single_value_or_raise())
 
 class Identifier(BoolOperand):
     def __init__(self, t):
@@ -215,8 +221,8 @@ class BinaryComparisonOperator(BoolOperator):
     def riak_js_expr(self):
         if self.reprsymbol == 'LIKE':
             arg0 = self.args[0]
-            arg1 = self.args[1].value
-            return '%s.filter(function(s) { return !s.match(/%s/g) }).length == 0' % (arg0.riak_js_expr(), regex_from_like(arg1.copy().pop()),)
+            arg1 = self.args[1]
+            return '%s.filter(function(s) { return !s.match(/%s/g) }).length == 0' % (arg0.riak_js_expr(), regex_from_like(arg1.get_single_value_or_raise()),)
         elif self.reprsymbol == 'IN':
             print self.args[0]
             return '(%s != undefined) && %s.filter(function(s) { return (%s.indexOf(s) < 0) }).length == 0' % (self.args[0].riak_js_expr(),
@@ -267,7 +273,7 @@ class BinaryComparisonOperator(BoolOperator):
         elif self.reprsymbol == 'LIKE':
             if arg0:
                 regex = re.compile(regex_from_like(arg1))
-                return bool(regex.match(arg0.value.copy().pop()))
+                return bool(regex.match(arg0.get_single_value_or_raise()))
             else:
                 return False
 
