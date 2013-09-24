@@ -75,11 +75,6 @@ class BoolOperand(object):
             return all(cmp(v1, v2) != 0 for v1, v2 in itertools.product(self.value, other.value))
         return NotImplemented
 
-    def __cmp__(self, other):
-        if isinstance(other, BoolOperand):
-            return all(cmp(v1, v2) for v1, v2 in itertools.product(self.value, other.value))
-        return NotImplemented
-
     def comparable(self):
         return True
 
